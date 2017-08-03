@@ -221,14 +221,25 @@ proc getToken(): Token =
     of '/':
       advance()
       
-      if character == '=':
-        advance()
-        
-        result.id = ttSlashAssign
-        result.value = "/="
-      else:
-        result.id = ttSlash
-        result.value = "/"
+      case character:
+        of '=':
+          advance()
+
+          result.id = ttSlashAssign
+          result.value = "/="
+        of '/':
+          advance()
+
+          while source.find("\n", position) != position:
+            advance()
+
+          if source.find("\n", position) == position:
+            advance()
+
+          result = getToken()
+        else:
+          result.id = ttSlash
+          result.value = "/"
     of '%':
       advance()
       

@@ -1,12 +1,24 @@
+import os
+import system
 import streams
 
 import parser/parser
 import parser/lexer/lexer
 
-var file = newFileStream("input.txt", fmRead)
+if paramCount() < 1:
+  echo "Error, missing input files."
+  echo "jiftc [input]"
+  
+  quit()
+
+var file = newFileStream(paramStr(1), fmRead)
 var source = ""
 
-if not isNil(file):
+if isNil(file):
+  echo "Failed to read `", paramStr(1), "`."
+  
+  quit()
+else:
   source = file.readAll()
 
 lexer.init(source)

@@ -3,6 +3,8 @@
 if [ "$1" = "clean" ]; then
 	rm -r src/nimcache
 	rm target/jiftc
+elif [ "$1" = "run" ]; then
+	nim -o:target/jiftc --opt:none -r c src/main.nim $2
 else
 	nim -o:target/jiftc --opt:none c src/main.nim
 fi

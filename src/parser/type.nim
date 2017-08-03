@@ -1,3 +1,4 @@
+import sequtils
 
 type
   TypeId = enum
@@ -12,6 +13,13 @@ type
   SingularType = ref object of BaseType
     typeId: TypeId
 
+  ArrayType = ref object of BaseType
+    elements: seq[BaseType]
+  
+  FunctionType = ref object of BaseType
+    inputs: seq[BaseType]
+    outputs: seq[BaseType]
+ 
 proc toString[T](gen: T): string
 
 
