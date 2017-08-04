@@ -13,20 +13,25 @@ var
   position: int
   character: char
 
-proc error(msg: string) =
+proc error(msg: string, offset: int = 0) =
   position += 1
 
   while source.find("\n", position) != position and position < len(source):
     line.add(source[position])
 
     position += 1
-          
+  
+  column -= len(line)
+  line = line.strip(trailing = false)
+  column += len(line)
+  line = line.strip()
+  
   var rowString = strutils.intToStr(row)
 
   echo "Error:"
   
   echo rowString, " | ", line
-  echo strutils.repeat('~', len(rowString) + column + 2), '^'
+  echo strutils.repeat('~', len(rowString) + column + offset + 2), '^'
   echo msg
 
   quit()
@@ -52,7 +57,7 @@ proc getToken(): Token =
   while character in [' ', '\t']:
     advance()
   
-  result = Token(id: ttEof, row: 0, column: 0, value: "")
+  result = Token(id: ttEof, row: row, column: column, value: "")
   
   if source.find("\n", position) == position:
     result.id = ttLine
@@ -77,6 +82,8 @@ proc getToken(): Token =
       advance()
     
     case result.value:
+      of "true", "false":
+        result.id = ttBoolean
       of "u8", "i8", "u16", "i16", "u32", "i32", "f32", "f64", "usize", "isize":
         result.id = ttType
       of "struct":
@@ -85,6 +92,8 @@ proc getToken(): Token =
         result.id = ttFunc
       of "if":
         result.id = ttIf
+      of "match":
+        result.id = ttMatch
       of "for":
         result.id = ttFor
       of "while":
@@ -103,8 +112,81 @@ proc getToken(): Token =
     return
     
   if character.isDigit():
-    while character.isDigit():
-      result.value.add(character)
+    result.value.add(character)
+
+    if character == '0':
+      advance()
+
+      if character == 'b':
+        advance()
+
+        result.id = ttBinaryInteger
+        
+        result.value = ""
+
+        if character != '0' and character != '1':
+          error("expected a binary digit after `0b`")
+
+        while character in {'0', '1', '_'}:
+          if character != '_':
+            result.value.add(character)
+
+          advance()
+
+        if character == '.':
+          result.value.add(character)
+
+          advance()
+
+          if character in {'0', '1'}:
+            result.id = ttBinaryNumber
+            
+            while character in {'0', '1'}:
+              result.value.add(character)
+
+              advance()
+          else:
+            error("expected a binary digit after the dot")
+
+        return
+      elif character == 'x':
+        advance()
+
+        result.id = ttHexInteger
+
+        result.value = ""
+        
+        if not character.isDigit() and not (character in {'a'..'f', 'A'..'F'}):
+          error("expected a hexadecimal digit after `0x`")
+
+        while character.isDigit() or character in {'a'..'f', 'A'..'F', '_'}:
+          if character != '_':
+            result.value.add(character)
+
+          advance()
+
+        if character == '.':
+          result.value.add(character)
+
+          advance()
+
+          if character.isDigit() or character in {'a'..'f', 'A'..'F', '_'}:
+            result.id = ttHexNumber
+
+            while character.isDigit() or character in {'a'..'f', 'A'..'F', '_'}:
+              result.value.add(character)
+
+              advance()
+          else:
+            error("expected a hexadecimal digit after the dot")
+        
+        return
+    else:
+      advance()
+     
+    while character.isDigit() or character == '_':
+      if character != '_':
+        result.value.add(character)
 
       advance()
     
@@ -118,8 +200,9 @@ proc getToken(): Token =
       advance()
       
       if character.isDigit():
-        while character.isDigit():
-          result.value.add(character)
+        while character.isDigit() or character == '_':
+          if character != '_':
+            result.value.add(character)
           
           advance()
       else:
@@ -128,6 +211,11 @@ proc getToken(): Token =
     return
   
   case character:
+    of '_':
+      advance()
+
+      result.id = ttBlank
+      result.value = "_"
     of '[':
       advance()
       
@@ -165,7 +253,10 @@ proc getToken(): Token =
       result.value = ","
     of '.':
       advance()
-
+      
+      if character.isDigit():
+        error("expected digit before dot", -1)
+      
       result.id = ttDot
       result.value = "."
     of ':':
@@ -262,9 +353,15 @@ proc getToken(): Token =
           result.value = "<="
         of '<':
           advance()
+          
+          if character == '=':
+            advance()
 
-          result.id = ttShiftLeft
-          result.value = "<<"
+            result.id = ttShiftLeftAssign
+            result.value = "<<="
+          else:
+            result.id = ttShiftLeft
+            result.value = "<<"
         else:
           result.id = ttLess
           result.value = "<"
@@ -279,12 +376,63 @@ proc getToken(): Token =
           result.value = ">="
         of '>':
           advance()
+          
+          if character == '=':
+            advance()
 
-          result.id = ttShiftRight
-          result.value = ">>"
+            result.id = ttShiftRightAssign
+            result.value = ">>="
+          else:          
+            result.id = ttShiftRight
+            result.value = ">>"
         else:
           result.id = ttGreater
           result.value = ">"
+    of '&':
+      advance()
+      
+      case character:
+        of '=':
+          advance()
+
+          result.id = ttBitwiseAndAssign
+          result.value = "&="
+        of '&':
+          advance()
+
+          result.id = ttLogicalAnd
+          result.value = "&&"
+        else:
+          result.id = ttBitwiseAnd
+          result.value = "&"
+    of '|':
+      advance()
+      
+      case character:
+        of '=':
+          advance()
+
+          result.id = ttBitwiseOrAssign
+          result.value = "|="
+        of '|':
+          advance()
+
+          result.id = ttLogicalOr
+          result.value = "||"
+        else:
+          result.id = ttBitwiseOr
+          result.value = "|"
+    of '^':
+      advance()
+      
+      if character == '=':
+        advance()
+
+        result.id = ttBitwiseXorAssign
+        result.value = "^="
+      else:
+        result.id = ttBitwiseXor
+        result.value = "^"
     of '=':
       advance()
 
@@ -311,14 +459,17 @@ proc getToken(): Token =
       return
 
 proc printTokens*() =
-  var token = getToken()
+  var
+    token = getToken()
+    tokens = @[token] 
   
   while token.id != ttEof:
-    echo token.id, " ", token.value
-
     token = getToken()
+
+    tokens.add(token)
   
-  echo token.id, " ", token.value
+  for t in tokens:
+    echo t.id, " ", t.value
 
 proc init*(newSource: string) =
   line = ""

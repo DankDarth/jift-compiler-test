@@ -1,0 +1,36 @@
+func split(x: u8) -> (exp: i8, frac: u8) {
+		exp = i8(x >> 3 & 0b1111)
+		frac = x & 0b111 | 0b1000
+}
+
+func add(a: u8, b: u8) -> u8 {
+		if a & 0b1_0000_000 ^ (b & 0b1_0000_000)
+				return sub(a, b)
+		
+		a_exp, a_frac := split(a)
+		b_exp, b_frac := split(b)
+		
+		exp_diff := a_exp - b_exp
+		
+		result_exp := 0
+			
+		if exp_diff > 0 {
+				result_exp = a_exp
+				
+				b_frac >>= exp_diff
+		} else {
+				result_exp = b_exp
+				
+				a_frac >>= -exp_diff
+		}
+		
+		result_frac := a_frac + b_frac
+		
+		if result_frac & 0b10000 {
+				result_frac >>= 1
+				
+				result_exp += 1
+		}
+		
+		return result_exp << 3 | (result_frac & 0b111)
+}

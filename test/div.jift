@@ -1,0 +1,18 @@
+func div(a: u8, b: u8) -> result: u8 {
+		result = 0
+		
+		quotient := 0x80
+		
+		for 8 {
+				diff := a - b
+				
+				if diff <= a {
+						result |= quotient
+						
+						a = diff
+				}
+				
+				quotient >>= 1
+				b >>= 1
+		}
+}

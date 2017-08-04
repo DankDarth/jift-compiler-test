@@ -5,6 +5,4 @@ import lexer/lexer
 
 import node
 
-
-
-
+var lexeme: Token

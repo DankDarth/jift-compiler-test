@@ -1,0 +1,11 @@
+func mult(a: u8, b: u8) -> result: u8 {
+		result = 0
+		
+		for 8 {
+				if a & 1 != 0
+						result += b
+				
+				a >>= 1
+				b <<= 1
+		}
+}

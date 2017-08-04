@@ -2,11 +2,11 @@ angles := [45.0, 26.565, 14.036, 7.125, 3.576, 1.79, 0.895, 0.448]
 
 struct Vector {
     x: f32
-    y: f32
+		y: f32
 }
 
 func rotate(vec: Vector, desired_angle: f32) -> Vector {
-    while desired_angle >= 90.0 {
+		while desired_angle >= 90.0 {
         temp := vec.x
         
         vec.x = -vec.y
