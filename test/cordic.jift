@@ -1,44 +1,44 @@
 angles := [45.0, 26.565, 14.036, 7.125, 3.576, 1.79, 0.895, 0.448]
 
 struct Vector {
-    x: f32
-		y: f32
+	x: f32
+	y: f32
 }
 
 func rotate(vec: Vector, desired_angle: f32) -> Vector {
-		while desired_angle >= 90.0 {
-        temp := vec.x
-        
-        vec.x = -vec.y
-        vec.y = temp
-
-        desired_angle -= 90.0
-    }
+	while desired_angle >= 90.0 {
+		temp := vec.x
     
-    for n in 0 to 8 {
-        new_vec: Vector
-        
-        if current_angle < desired_angle {
-            new_vec = Vector {
-                vec.x - vec.y >> n
-                vec.y + vec.x >> n
-            }
-            
-            current_angle += angles[n]
-        } else {
-            new_vec = Vector {
-                vec.x + vec.y >> n
-                vec.y - vec.x >> n
-            }
-            
-            current_angle -= angles[n]
-        }
+		vec.x = -vec.y
+		vec.y = temp
 
-        vec = new_vec
-    }
-
-    vec.x = vec.x >> 1 + vec.x >> 3 - vec.x >> 5
-    vec.y = vec.y >> 1 + vec.y >> 3 - vec.y >> 5
+		desired_angle -= 90.0
+	}
     
-    return vec
+	for n in 0 to 8 {
+		new_vec: Vector
+   
+		if current_angle < desired_angle {
+			new_vec = Vector {
+				vec.x - vec.y >> n
+				vec.y + vec.x >> n
+			}
+
+			current_angle += angles[n]
+		} else {
+			new_vec = Vector {
+				vec.x + vec.y >> n
+				vec.y - vec.x >> n
+			}
+
+			current_angle -= angles[n]
+		}
+
+		vec = new_vec
+	}
+
+	vec.x = vec.x >> 1 + vec.x >> 3 - vec.x >> 5
+	vec.y = vec.y >> 1 + vec.y >> 3 - vec.y >> 5
+
+	return vec
 }
